@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start | Masik</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --win-blue: #2d89ef;
+            --win-purple: #92278f;
+            --win-orange: #da532c;
+            --win-green: #00a300;
+            --win-red: #ee1111;
+            --win-pink: #ff0097;
+            --win-teal: #00aba9;
+            --win-dark-blue: #1e3a8a;
+            --win-dark: #1a1a2e;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; cursor:default; user-select:none; }
+        body {
+            background:#000; color:white;
+            font-family:'Segoe UI',Tahoma,sans-serif;
+            height:100vh; overflow:hidden;
+            display:flex; flex-direction:column;
+        }
+
+        /* VIDEO BG */
+        #video-bg {
+            position:fixed; top:0; left:0; width:100%; height:100%;
+            z-index:-2; object-fit:cover; opacity:0.55;
+        }
+        .bg-overlay {
+            position:fixed; top:0; left:0; width:100%; height:100%;
+            z-index:-1;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,30,0.5) 100%);
+        }
+
+        /* HEADER */
+        header {
+            flex:0 0 auto; padding:40px 80px 15px 80px;
+            display:flex; justify-content:space-between; align-items:center; z-index:10;
+        }
+        header h1 { font-size:3.5rem; font-weight:300; letter-spacing:-1px; text-shadow:2px 2px 10px rgba(0,0,0,0.7); }
+        .user-profile { display:flex; align-items:center; cursor:pointer; }
+        .user-profile:hover .user-avatar { border-color:var(--win-blue); background:rgba(45,137,239,0.2); }
+        .user-info { text-align:right; margin-right:15px; }
+        .user-name { font-size:1.2rem; font-weight:400; }
+        .user-domain { font-size:0.75rem; opacity:0.6; }
+        .user-avatar {
+            width:45px; height:45px; background:rgba(255,255,255,0.1);
+            border:2px solid white; display:flex; align-items:center;
+            justify-content:center; font-size:1.2rem;
+            backdrop-filter:blur(5px); transition:0.2s;
+        }
+
+        /* GRID */
+        .start-screen {
+            flex:1 1 auto; display:flex; padding:15px 80px 15px 80px;
+            gap:55px; overflow-x:auto; overflow-y:hidden;
+            transition:transform 0.5s ease-in-out, opacity 0.4s;
+        }
+        .tile-group {
+            display:grid; grid-template-rows:repeat(3,120px);
+            gap:10px; height:max-content; flex-shrink:0;
+        }
+        .tile {
+            position:relative; padding:12px; color:white;
+            display:flex; flex-direction:column; justify-content:flex-end;
+            transition:transform 0.15s,outline 0.1s,filter 0.15s;
+            box-shadow:0 4px 20px rgba(0,0,0,0.5); cursor:pointer;
+            overflow:hidden;
+        }
+        .tile::before {
+            content:''; position:absolute; top:0;left:0;right:0;bottom:0;
+            background:rgba(255,255,255,0); transition:background 0.15s;
+        }
+        .tile:hover::before { background:rgba(255,255,255,0.08); }
+        .tile:hover { outline:3px solid rgba(255,255,255,0.45); z-index:5; }
+        .tile:active { transform:scale(0.93); box-shadow:inset 0 0 25px rgba(0,0,0,0.5); }
+        .w-1 { grid-column:span 1; } .w-2 { grid-column:span 2; } .w-3 { grid-column:span 3; }
+        .h-1 { grid-row:span 1; } .h-2 { grid-row:span 2; } .h-3 { grid-row:span 3; }
+        .tile i.main-icon { font-size:2.3rem; position:absolute; top:50%; left:50%; transform:translate(-50%,-62%); opacity:0.9; }
+        .tile .label { font-size:0.82rem; font-weight:400; z-index:2; }
+        .tile .content { font-size:0.88rem; font-weight:300; line-height:1.3; margin-bottom:22px; }
+        .bg-orange{background:var(--win-orange);} .bg-red{background:var(--win-red);}
+        .bg-green{background:var(--win-green);} .bg-purple{background:var(--win-purple);}
+        .bg-blue{background:var(--win-blue);} .bg-teal{background:var(--win-teal);}
+        .bg-pink{background:var(--win-pink);} .bg-dark{background:var(--win-dark-blue);}
+        .bg-darker{background:#111827;} .bg-indigo{background:#3730a3;}
+
+        /* OVERLAY */
+        #app-overlay {
+            position:fixed; top:0;left:0;width:100%;height:100%;
+            background:rgba(10,10,20,0.97); z-index:100;
+            display:flex; flex-direction:column;
+            transform:scale(0.9) rotateY(-20deg); opacity:0; pointer-events:none;
+            transition:transform 0.45s cubic-bezier(0.1,0.9,0.2,1), opacity 0.35s;
+            overflow:hidden;
+        }
+        #app-overlay.active { transform:scale(1) rotateY(0deg); opacity:1; pointer-events:all; }
+        .app-inner { padding:70px 80px 30px 80px; flex:1; overflow-y:auto; }
+        .close-btn {
+            position:absolute; top:30px; right:60px;
+            background:transparent; border:2px solid rgba(255,255,255,0.5); color:white;
+            padding:9px 18px; font-size:1rem; cursor:pointer; transition:0.2s;
+            font-family:inherit;
+        }
+        .close-btn:hover { background:white; color:black; }
+        .app-title-bar {
+            font-size:3.5rem; font-weight:300; margin-bottom:25px;
+            border-left:5px solid var(--win-orange); padding-left:20px;
+        }
+
+        /* CLOCK */
+        .bottom-info {
+            position:fixed; bottom:25px; left:80px; pointer-events:none;
+            text-shadow:2px 2px 10px rgba(0,0,0,0.8);
+        }
+        #clock { font-size:4.5rem; font-weight:200; line-height:1; margin-bottom:-5px; }
+        #date { font-size:1.1rem; font-weight:300; }
+
+        /* SCROLLBAR */
+        .start-screen::-webkit-scrollbar { height:10px; }
+        .start-screen::-webkit-scrollbar-track { background:transparent; }
+        .start-screen::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.25); }
+        .start-screen::-webkit-scrollbar-thumb:hover { background:rgba(255,255,255,0.5); }
+
+        /* ---- APP SPECIFIC STYLES ---- */
+
+        /* MAKEIT HAVOC */
+        .havoc-splash {
+            display:flex; flex-direction:column; align-items:center;
+            justify-content:center; height:60vh; text-align:center;
+            animation:fadeInUp 0.5s ease;
+        }
+        .havoc-splash h1 {
+            font-size:5rem; font-weight:900; letter-spacing:8px;
+            text-transform:uppercase;
+            background:linear-gradient(135deg,#ff6b35,#f7c59f,#ff6b35);
+            -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+            text-shadow:none; margin-bottom:15px;
+            animation:glowPulse 3s ease infinite;
+        }
+        .havoc-splash p { font-size:1.1rem; opacity:0.6; margin-bottom:30px; }
+        .havoc-btn {
+            display:inline-block; padding:14px 40px;
+            background:var(--win-orange); color:white; border:none;
+            font-size:1.1rem; font-family:inherit; cursor:pointer;
+            transition:0.2s; text-decoration:none;
+        }
+        .havoc-btn:hover { background:#c44a24; }
+        @keyframes glowPulse { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.3)} }
+
+        /* YOUTUBE */
+        .yt-header { display:flex; align-items:center; gap:20px; margin-bottom:30px; }
+        .yt-icon { font-size:3rem; color:#FF0000; }
+        .yt-channel-name { font-size:2.5rem; font-weight:300; }
+        .yt-desc { opacity:0.7; margin-bottom:25px; line-height:1.6; font-size:1.05rem; }
+        .yt-btn {
+            display:inline-block; padding:12px 35px;
+            background:#FF0000; color:white; border:none;
+            font-size:1rem; font-family:inherit; cursor:pointer;
+            text-decoration:none; transition:0.2s;
+        }
+        .yt-btn:hover { background:#cc0000; }
+
+        /* MAIL */
+        .mail-container { max-width:600px; }
+        .mail-big-icon { font-size:4rem; color:var(--win-pink); margin-bottom:20px; }
+        .mail-message { font-size:1.4rem; font-weight:300; margin-bottom:15px; line-height:1.5; }
+        .mail-addr {
+            font-size:1.2rem; background:rgba(255,0,151,0.2);
+            border-left:4px solid var(--win-pink); padding:12px 20px;
+            font-family:monospace; margin-top:15px;
+        }
+
+        /* GITHUB */
+        .gh-header { display:flex; align-items:center; gap:15px; margin-bottom:25px; }
+        .gh-stats { display:flex; gap:20px; margin-bottom:30px; flex-wrap:wrap; }
+        .gh-stat-box {
+            background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+            padding:15px 25px; text-align:center; min-width:120px;
+        }
+        .gh-stat-num { font-size:2rem; font-weight:300; color:#58a6ff; }
+        .gh-stat-label { font-size:0.75rem; opacity:0.6; }
+        .gh-btn {
+            display:inline-block; padding:12px 35px;
+            background:#238636; color:white; border:none;
+            font-size:1rem; font-family:inherit; cursor:pointer;
+            text-decoration:none; transition:0.2s;
+        }
+        .gh-btn:hover { background:#1a6129; }
+
+        /* DEVLOG */
+        .devlog-entries { max-width:750px; }
+        .devlog-entry {
+            border-left:3px solid var(--win-green); padding:12px 20px;
+            margin-bottom:15px; background:rgba(0,163,0,0.07);
+        }
+        .devlog-date { font-size:0.75rem; opacity:0.5; font-family:monospace; margin-bottom:5px; }
+        .devlog-text { font-size:1rem; line-height:1.5; }
+        .devlog-tag {
+            display:inline-block; font-size:0.7rem; padding:2px 8px;
+            background:rgba(0,163,0,0.3); margin-top:8px;
+        }
+
+        /* HARDWARE */
+        .hw-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px; max-width:900px; }
+        .hw-card {
+            background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1);
+            padding:20px; transition:border-color 0.2s;
+        }
+        .hw-card:hover { border-color:var(--win-blue); }
+        .hw-card-title { font-size:0.7rem; letter-spacing:2px; text-transform:uppercase; opacity:0.5; margin-bottom:10px; }
+        .hw-card-main { font-size:1.3rem; font-weight:400; margin-bottom:5px; }
+        .hw-card-sub { font-size:0.85rem; opacity:0.6; line-height:1.5; }
+        .hw-bar { height:4px; background:rgba(255,255,255,0.1); margin-top:10px; border-radius:2px; }
+        .hw-bar-fill { height:100%; border-radius:2px; }
+
+        /* PC/TABLET */
+        .device-header { display:flex; align-items:center; gap:20px; margin-bottom:20px; }
+        .device-icon-big { font-size:3rem; color:var(--win-purple); }
+        .device-specs { list-style:none; }
+        .device-specs li { padding:8px 0; border-bottom:1px solid rgba(255,255,255,0.07); font-size:0.95rem; display:flex; justify-content:space-between; max-width:500px; }
+        .device-specs li span:last-child { opacity:0.6; }
+
+        /* OS STACK */
+        .os-timeline { max-width:600px; }
+        .os-entry {
+            display:flex; gap:20px; padding:15px 0;
+            border-bottom:1px solid rgba(255,255,255,0.07);
+        }
+        .os-year { font-size:0.8rem; opacity:0.5; font-family:monospace; width:80px; padding-top:3px; flex-shrink:0; }
+        .os-name { font-size:1.1rem; margin-bottom:4px; }
+        .os-desc { font-size:0.85rem; opacity:0.6; line-height:1.4; }
+        .os-current { color:var(--win-teal); }
+
+        /* MOBILE MOD */
+        .mob-specs-grid { display:grid; grid-template-columns:1fr 1fr; gap:15px; max-width:600px; margin-bottom:25px; }
+        .mob-spec { background:rgba(255,255,255,0.05); padding:14px 18px; border-left:3px solid var(--win-purple); }
+        .mob-spec-title { font-size:0.7rem; opacity:0.5; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px; }
+        .mob-spec-val { font-size:1rem; }
+        .mob-windows-badge {
+            display:inline-flex; align-items:center; gap:8px;
+            background:rgba(45,137,239,0.2); border:1px solid var(--win-blue);
+            padding:8px 16px; font-size:0.9rem;
+        }
+
+        /* AI TOOLS */
+        .ai-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:15px; max-width:800px; }
+        .ai-card {
+            background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08);
+            padding:18px; display:flex; flex-direction:column; gap:8px;
+            transition:border-color 0.2s, background 0.2s; cursor:default;
+        }
+        .ai-card:hover { border-color:rgba(255,255,255,0.3); background:rgba(255,255,255,0.08); }
+        .ai-card-icon { font-size:1.8rem; }
+        .ai-card-name { font-size:1rem; font-weight:500; }
+        .ai-card-desc { font-size:0.8rem; opacity:0.55; line-height:1.4; }
+        .ai-badge { display:inline-block; font-size:0.65rem; padding:2px 7px; background:rgba(255,255,255,0.1); margin-top:4px; }
+        .ai-tip {
+            margin-top:20px; padding:15px 20px; background:rgba(255,255,255,0.04);
+            border-left:3px solid var(--win-teal); max-width:700px; font-size:0.9rem; line-height:1.5; opacity:0.8;
+        }
+
+        /* MUSIC PLAYER */
+        .player-wrap { max-width:550px; }
+        .player-box {
+            background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+            padding:25px;
+        }
+        .player-track-name { font-size:1.5rem; font-weight:300; margin-bottom:5px; }
+        .player-artist { font-size:0.9rem; opacity:0.6; margin-bottom:20px; }
+        .player-progress { height:3px; background:rgba(255,255,255,0.15); margin-bottom:20px; cursor:pointer; }
+        .player-progress-fill { height:100%; background:var(--win-pink); width:0%; transition:width 0.3s; }
+        .player-controls { display:flex; gap:15px; align-items:center; margin-bottom:20px; }
+        .player-btn {
+            background:transparent; border:1px solid rgba(255,255,255,0.3); color:white;
+            width:40px; height:40px; display:flex; align-items:center; justify-content:center;
+            cursor:pointer; font-size:1rem; transition:0.2s; font-family:inherit;
+        }
+        .player-btn:hover { background:rgba(255,255,255,0.1); }
+        .player-btn.play-btn { width:50px; height:50px; background:var(--win-pink); border-color:var(--win-pink); font-size:1.2rem; }
+        .player-btn.play-btn:hover { background:#d4007f; }
+        .player-playlist { list-style:none; margin-top:10px; }
+        .player-playlist li {
+            padding:10px 15px; border-bottom:1px solid rgba(255,255,255,0.06);
+            font-size:0.9rem; cursor:pointer; transition:background 0.15s; display:flex; justify-content:space-between;
+        }
+        .player-playlist li:hover { background:rgba(255,255,255,0.07); }
+        .player-playlist li.active { color:var(--win-pink); background:rgba(255,0,151,0.08); }
+        .player-playlist li .track-artist { opacity:0.5; font-size:0.8rem; }
+        .music-warning {
+            background:rgba(218,83,44,0.15); border:1px solid var(--win-orange);
+            padding:15px 20px; margin-bottom:20px; font-size:0.88rem; line-height:1.5;
+        }
+        .music-warning strong { color:var(--win-orange); }
+
+        /* DISCORD */
+        .dc-container { max-width:500px; }
+        .dc-icon { font-size:4rem; color:#5865F2; margin-bottom:15px; }
+        .dc-server-name { font-size:2rem; font-weight:300; margin-bottom:10px; }
+        .dc-desc { opacity:0.7; line-height:1.6; margin-bottom:25px; }
+        .dc-btn {
+            display:inline-block; padding:12px 35px;
+            background:#5865F2; color:white; border:none;
+            font-size:1rem; font-family:inherit; cursor:pointer;
+            text-decoration:none; transition:0.2s;
+        }
+        .dc-btn:hover { background:#4752c4; }
+
+        /* PROFILE */
+        .profile-container { max-width:600px; }
+        .profile-header { display:flex; align-items:center; gap:30px; margin-bottom:30px; }
+        .profile-avatar-big {
+            width:90px; height:90px; background:rgba(45,137,239,0.2);
+            border:3px solid var(--win-blue); display:flex; align-items:center;
+            justify-content:center; font-size:2.5rem; flex-shrink:0;
+        }
+        .profile-name { font-size:2.5rem; font-weight:300; }
+        .profile-domain { opacity:0.5; font-family:monospace; }
+        .profile-fields { display:flex; flex-direction:column; gap:5px; }
+        .profile-field { display:flex; gap:10px; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.07); align-items:center; }
+        .profile-field-label { font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; opacity:0.4; width:130px; flex-shrink:0; }
+        .profile-field-val { font-size:0.95rem; }
+        .profile-links { display:flex; gap:12px; margin-top:20px; flex-wrap:wrap; }
+        .profile-link {
+            display:inline-flex; align-items:center; gap:8px;
+            padding:10px 18px; border:1px solid rgba(255,255,255,0.2);
+            color:white; text-decoration:none; font-size:0.9rem;
+            transition:0.2s; cursor:pointer;
+        }
+        .profile-link:hover { background:rgba(255,255,255,0.1); border-color:rgba(255,255,255,0.5); }
+
+        /* REDMI */
+        .redmi-container { max-width:600px; }
+        .redmi-header { display:flex; align-items:center; gap:20px; margin-bottom:20px; }
+        .redmi-icon { font-size:3rem; color:var(--win-red); }
+        .redmi-specs { list-style:none; }
+        .redmi-specs li { padding:9px 0; border-bottom:1px solid rgba(255,255,255,0.07); font-size:0.95rem; display:flex; justify-content:space-between; max-width:500px; }
+        .redmi-specs li span:last-child { opacity:0.6; }
+        .redmi-status { margin-top:20px; padding:12px 18px; background:rgba(238,17,17,0.1); border-left:3px solid var(--win-red); font-size:0.9rem; opacity:0.8; }
+
+        @keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:none} }
+
+        /* Notification toast */
+        #toast {
+            position:fixed; bottom:80px; right:40px; z-index:200;
+            background:rgba(20,20,40,0.95); border:1px solid rgba(255,255,255,0.2);
+            padding:15px 25px; font-size:0.9rem; opacity:0;
+            transform:translateY(10px); transition:all 0.3s; pointer-events:none;
+            max-width:300px;
+        }
+        #toast.show { opacity:1; transform:translateY(0); }
+    </style>
+</head>
+<body>
+
+    <video id="video-bg" autoplay muted loop playsinline>
+        <source src="https://packaged-media.redd.it/l0zdc0vknv9a1/pb/m2-res_480p.mp4?m=DASHPlaylist.mpd&var=sgpssan&v=1&e=1774544400&s=92f3aa20c481ae1f7959bdeb01fd539ba0371bb8" type="video/mp4">
+    </video>
+    <div class="bg-overlay"></div>
+
+    <header>
+        <h1>Start</h1>
+        <div class="user-profile" onclick="openProfile()">
+            <div class="user-info">
+                <div class="user-name">Masik</div>
+                <div class="user-domain">mwkdev.pp.ua</div>
+            </div>
+            <div class="user-avatar"><i class="fas fa-user"></i></div>
+        </div>
+    </header>
+
+    <div class="start-screen" id="main-grid">
+
+        <!-- ГРУПА 1: Головне -->
+        <div class="tile-group" style="grid-template-columns:repeat(3,120px);">
+            <div class="tile bg-orange w-2 h-2" onclick="openApp('makeit')">
+                <div class="content"><strong>MakeIt Havoc</strong><br><br>Reviving the shooter.<br>Custom /queue system,<br>Faceit-style hub.</div>
+                <div class="label">Project</div>
+            </div>
+            <div class="tile bg-green w-1 h-1" onclick="openApp('devlog')">
+                <i class="fas fa-terminal main-icon"></i><div class="label">Dev Log</div>
+            </div>
+            <div class="tile bg-pink w-1 h-1" onclick="openApp('mail')">
+                <i class="fas fa-envelope main-icon"></i><div class="label">Mail</div>
+            </div>
+            <div class="tile bg-red w-2 h-1" onclick="openApp('youtube')">
+                <i class="fab fa-youtube main-icon"></i><div class="label">YouTube</div>
+            </div>
+            <div class="tile bg-teal w-1 h-1" onclick="openApp('github')">
+                <i class="fab fa-github main-icon"></i><div class="label">GitHub</div>
+            </div>
+        </div>
+
+        <!-- ГРУПА 2: Залізо -->
+        <div class="tile-group" style="grid-template-columns:repeat(2,120px);">
+            <div class="tile bg-blue w-2 h-1" onclick="openApp('hardware')">
+                <div class="content"><strong>Desktop PC</strong><br>Hardware Details</div>
+                <div class="label">Hardware</div>
+            </div>
+            <div class="tile bg-teal w-1 h-1" onclick="openApp('tablet')">
+                <i class="fas fa-tablet-alt main-icon"></i><div class="label">PC Tablet</div>
+            </div>
+            <div class="tile bg-purple w-1 h-1" onclick="openApp('osstack')">
+                <i class="fas fa-layer-group main-icon"></i><div class="label">OS Stack</div>
+            </div>
+            <div class="tile bg-dark w-2 h-1" onclick="openApp('osstack')">
+                <div class="content">tiny10 / Nobara / Win7</div>
+                <div class="label">OS History</div>
+            </div>
+        </div>
+
+        <!-- ГРУПА 3: Мобайл і ін. -->
+        <div class="tile-group" style="grid-template-columns:repeat(3,120px);">
+            <div class="tile bg-purple w-2 h-2" onclick="openApp('mobilemod')">
+                <div class="content"><strong>Samsung SM-P585</strong><br><br>Status: Custom Mod<br>OS: LineageOS<br>Win-style UI active</div>
+                <div class="label">Mobile Modding</div>
+            </div>
+            <div class="tile bg-blue w-1 h-1" onclick="openApp('redmi')">
+                <i class="fas fa-mobile-alt main-icon"></i><div class="label">Redmi 8T</div>
+            </div>
+            <div class="tile bg-darker w-1 h-1" onclick="openApp('tools')">
+                <i class="fas fa-robot main-icon" style="color:#88ccff"></i><div class="label">AI Tools</div>
+            </div>
+            <div class="tile bg-pink w-2 h-1" onclick="openApp('music')">
+                <div class="content"><strong>Now Playing</strong><br>Twin Atlantic, Beartooth...</div>
+                <div class="label">Music</div>
+                <i class="fas fa-music" style="position:absolute;right:12px;top:12px;opacity:0.25;font-size:1.4rem;"></i>
+            </div>
+            <div class="tile" style="background:#5865F2;" onclick="openApp('discord')">
+                <i class="fab fa-discord main-icon"></i><div class="label">Discord</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- APP OVERLAY -->
+    <div id="app-overlay">
+        <button class="close-btn" onclick="closeApp()"><i class="fas fa-arrow-left"></i> Back</button>
+        <div class="app-inner" id="app-content-area"></div>
+    </div>
+
+    <div class="bottom-info">
+        <div id="clock">00:00</div>
+        <div id="date">дата завантажується...</div>
+    </div>
+
+    <div id="toast"></div>
+
+    <script>
+    // Clock
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clock').innerText = now.getHours()+':'+String(now.getMinutes()).padStart(2,'0');
+        document.getElementById('date').innerText = now.toLocaleDateString('uk-UA',{weekday:'long',day:'numeric',month:'long'});
+    }
+    setInterval(updateClock,1000); updateClock();
+
+    // Grid/Overlay
+    const grid = document.getElementById('main-grid');
+    const overlay = document.getElementById('app-overlay');
+    const contentArea = document.getElementById('app-content-area');
+
+    function openApp(id) {
+        grid.style.transform='scale(0.7) translateZ(-300px)';
+        grid.style.opacity='0';
+        setTimeout(()=>{
+            contentArea.innerHTML = getAppContent(id);
+            overlay.classList.add('active');
+            if(id==='music') initPlayer();
+        },220);
+    }
+    function closeApp() {
+        overlay.classList.remove('active');
+        setTimeout(()=>{ grid.style.transform='scale(1) translateZ(0)'; grid.style.opacity='1'; },280);
+    }
+    function openProfile() { openApp('profile'); }
+
+    function showToast(msg, duration=3000) {
+        const t=document.getElementById('toast'); t.textContent=msg;
+        t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),duration);
+    }
+
+    // Scroll
+    const ss=document.querySelector('.start-screen');
+    window.addEventListener('wheel',(e)=>{ if(!overlay.classList.contains('active')) ss.scrollBy({left:e.deltaY*3,behavior:'smooth'}); });
+
+    // ---- APP CONTENT ----
+    function getAppContent(id) {
+        switch(id) {
+
+        case 'makeit': return `
+            <div class="havoc-splash" style="animation:fadeInUp 0.5s ease">
+                <h1>MakeIt Havoc</h1>
+                <p>Reviving the shooter. Custom /queue system, Faceit-style hub.</p>
+                <a href="https://masik52xd.github.io/makeithavoc/" target="_blank" class="havoc-btn">
+                    <i class="fas fa-external-link-alt"></i> Open Project
+                </a>
+            </div>`;
+
+        case 'youtube': return `
+            <div class="app-title-bar" style="border-left-color:#FF0000">YouTube</div>
+            <div class="yt-header"><i class="fab fa-youtube yt-icon"></i><div class="yt-channel-name">@Mas1k52</div></div>
+            <p class="yt-desc">Ігровий контент, девлоги, моддинг - це все скоро буде, найближчим часом.<br>Підписуйся щоб не пропустити.</p>
+            <a href="https://www.youtube.com/@Mas1k52" target="_blank" class="yt-btn"><i class="fab fa-youtube"></i> Відкрити канал</a>`;
+
+        case 'mail': return `
+            <div class="app-title-bar" style="border-left-color:var(--win-pink)">Mail</div>
+            <div class="mail-container">
+                <div class="mail-big-icon"><i class="fas fa-envelope"></i></div>
+                <div class="mail-message">Я нічим не допоможу,<br>але якщо хочеш зв'язатись з Masik'ом:</div>
+                <div class="mail-addr">buzznachile@gmail.com</div>
+            </div>`;
+
+        case 'github': return `
+            <div class="app-title-bar" style="border-left-color:#58a6ff">GitHub</div>
+            <div class="gh-header"><i class="fab fa-github" style="font-size:3rem;"></i><div style="font-size:2rem;font-weight:300;">masik52xd</div></div>
+            <div class="gh-stats">
+                <div class="gh-stat-box"><div class="gh-stat-num">∞</div><div class="gh-stat-label">Ideas</div></div>
+                <div class="gh-stat-box"><div class="gh-stat-num">WIP</div><div class="gh-stat-label">Status</div></div>
+                <div class="gh-stat-box"><div class="gh-stat-num">1</div><div class="gh-stat-label">Main project</div></div>
+            </div>
+            <p style="opacity:0.7;margin-bottom:25px;max-width:500px;line-height:1.6;">Репозиторії, проекти, код - це все не моє. Тут живуть всі сайти і мій лаунчер для майнкрафту.</p>
+            <a href="https://github.com/masik52xd" target="_blank" class="gh-btn"><i class="fab fa-github"></i> Відкрити GitHub</a>`;
+
+        case 'devlog': return `
+            <div class="app-title-bar" style="border-left-color:var(--win-green)">Dev Log</div>
+            <div class="devlog-entries">
+                <div class="devlog-entry">
+                    <div class="devlog-date">26.03.2026</div>
+                    <div class="devlog-text">Отримав mwkdev.pp.ua. Думав про що зробити сайт. Придумав.</div>
+                    <span class="devlog-tag">DEPLOY</span>
+                </div>
+                <div class="devlog-entry">
+                    <div class="devlog-date">21.03.2026</div>
+                    <div class="devlog-text">Оновив бота MakeIt, переписав логіку пошуку, оптимізував обробку скріншотів після гри</div>
+                    <span class="devlog-tag">MAKEIT</span>
+                </div>
+            </div>`;
+
+        case 'hardware': return `
+            <div class="app-title-bar">Hardware</div>
+            <div class="hw-grid">
+                <div class="hw-card">
+                    <div class="hw-card-title">CPU</div>
+                    <div class="hw-card-main">Intel Core i5-8600K</div>
+                    <div class="hw-card-sub">6 ядер / 6 потоків · 3.6 → 4.3 GHz<br>Coffee Lake · 14nm · LGA1151 v2</div>
+                    <div class="hw-bar"><div class="hw-bar-fill" style="width:72%;background:#2d89ef;"></div></div>
+                </div>
+                <div class="hw-card">
+                    <div class="hw-card-title">GPU</div>
+                    <div class="hw-card-main">Radeon RX 580 8GB</div>
+                    <div class="hw-card-sub">Polaris 20 · 2304 SP<br>256-bit GDDR5 · 1340 MHz boost<br>OpenGL 4.6 · Vulkan 1.3</div>
+                    <div class="hw-bar"><div class="hw-bar-fill" style="width:65%;background:#da532c;"></div></div>
+                </div>
+                <div class="hw-card">
+                    <div class="hw-card-title">RAM</div>
+                    <div class="hw-card-main">16 GB DDR4</div>
+                    <div class="hw-card-sub">Dual channel · 2400–3200 MHz<br>XMP available</div>
+                    <div class="hw-bar"><div class="hw-bar-fill" style="width:60%;background:#00a300;"></div></div>
+                </div>
+                <div class="hw-card">
+                    <div class="hw-card-title">Motherboard</div>
+                    <div class="hw-card-main">Z370 Chipset</div>
+                    <div class="hw-card-sub">LGA1151 v2 · ATX<br>Підтримка оверклокінгу CPU</div>
+                </div>
+                <div class="hw-card">
+                    <div class="hw-card-title">Storage</div>
+                    <div class="hw-card-main">SSD + HDD</div>
+                    <div class="hw-card-sub">OS на SSD (SATA)<br>Медіа і бекапи на HDD</div>
+                    <div class="hw-bar"><div class="hw-bar-fill" style="width:55%;background:#00aba9;"></div></div>
+                </div>
+                <div class="hw-card">
+                    <div class="hw-card-title">OS</div>
+                    <div class="hw-card-main">tiny10</div>
+                    <div class="hw-card-sub">Stripped Windows 10<br>Без телеметрії, без сміття</div>
+                </div>
+            </div>`;
+
+        case 'tablet': return `
+            <div class="app-title-bar" style="border-left-color:var(--win-purple)">PC Tablet — SM-P585</div>
+            <div class="device-header">
+                <div class="device-icon-big"><i class="fas fa-tablet-alt"></i></div>
+                <div>
+                    <div style="font-size:1.5rem;font-weight:400;">Samsung Galaxy Tab A (2016)</div>
+                    <div style="opacity:0.5;font-size:0.9rem;">SM-P585 · Custom ROM · Windows-style UI</div>
+                </div>
+            </div>
+            <ul class="device-specs">
+                <li><span>SoC</span><span>Exynos 7870 · 8×1.6GHz · 14nm</span></li>
+                <li><span>RAM</span><span>3 GB LPDDR3</span></li>
+                <li><span>Storage</span><span>16 GB + 16 GB microSD</span></li>
+                <li><span>Display</span><span>10.1" · 1920×1200 · TFT</span></li>
+                <li><span>OS</span><span>LineageOS (Android 12L)</span></li>
+                <li><span>UI Theme</span><span>Windows 10 Launcher</span></li>
+                <li><span>Status</span><span>Debloated · Root · Custom kernel</span></li>
+                <li><span>S Pen</span><span>Підтримується</span></li>
+            </ul>
+            <div style="margin-top:20px;">
+                <span class="mob-windows-badge"><i class="fab fa-windows"></i> Windows-style UI активний</span>
+            </div>`;
+
+        case 'osstack': return `
+            <div class="app-title-bar" style="border-left-color:var(--win-teal)">OS Stack</div>
+            <p style="opacity:0.6;margin-bottom:25px;font-size:0.95rem;">Всі операційні системи через які пройшов Masik. Кожна залишила слід.</p>
+            <div class="os-timeline">
+                <div class="os-entry">
+                    <div class="os-year">2020</div>
+                    <div>
+                        <div class="os-name">Windows 7 Ultimate</div>
+                        <div class="os-desc">Класика. 2020 рік, підтримка закінчилась, але хто питав. Aero glass, старі відчуття, нульовий страх перед вірусами, старий Dell Latitude.</div>
+                    </div>
+                </div>
+                <div class="os-entry">
+                    <div class="os-year">2021</div>
+                    <div>
+                        <div class="os-name">Windows 10</div>
+                        <div class="os-desc">Перехід на сучасніше. Легендарний пентіум на HP 250 G6. Ще навіть не знав про Rufus</div>
+                    </div>
+                </div>
+                <div class="os-entry">
+                    <div class="os-year">2026</div>
+                    <div>
+                        <div class="os-name">Nobara Linux</div>
+                        <div class="os-desc">Fedora-based, орієнтований на геймерів. Steam, Proton, kernel патчі — все з коробки. Добре, але деякі ігри ще не хотіли. Коли запустив cs2 зразу зніс Nobara, через нестабільний фпс.</div>
+                    </div>
+                </div>
+                <div class="os-entry">
+                    <div class="os-year">2026-now</div>
+                    <div>
+                        <div class="os-name os-current">tiny10 <span style="font-size:0.75rem;opacity:0.6;">← зараз</span></div>
+                        <div class="os-desc">Stripped-down Windows 10. Нульова телеметрія, мінімум процесів. i5-8600K дихає вільно. Поки найкращий варіант для цього заліза. Випадково обрав його в Ventoy-і.</div>
+                    </div>
+                </div>
+            </div>`;
+
+        case 'mobilemod': return `
+            <div class="app-title-bar" style="border-left-color:var(--win-purple)">Mobile Modding</div>
+            <div class="mob-specs-grid">
+                <div class="mob-spec"><div class="mob-spec-title">Пристрій</div><div class="mob-spec-val">Samsung SM-P585</div></div>
+                <div class="mob-spec"><div class="mob-spec-title">ROM</div><div class="mob-spec-val">LineageOS</div></div>
+                <div class="mob-spec"><div class="mob-spec-title">Android</div><div class="mob-spec-val">12L</div></div>
+                <div class="mob-spec"><div class="mob-spec-title">Root</div><div class="mob-spec-val">Magisk</div></div>
+                <div class="mob-spec"><div class="mob-spec-title">Debloat</div><div class="mob-spec-val">Samsung bloat видалено</div></div>
+                <div class="mob-spec"><div class="mob-spec-title">UI Theme</div><div class="mob-spec-val">Windows 10 theme</div></div>
+            </div>
+            <div style="margin-bottom:20px;">
+                <span class="mob-windows-badge"><i class="fab fa-windows"></i> Launcher стилізований під Windows 10 — По крайній мірі є таскбар</span>
+            </div>
+            <p style="opacity:0.7;max-width:550px;line-height:1.6;font-size:0.95rem;">Планшет перепрошитий вручну через ODIN. Мій перший досвід з прошиттям пристроїв, в цей час хостить мого бота в діскорді.</p>`;
+
+        case 'redmi': return `
+            <div class="app-title-bar" style="border-left-color:var(--win-red)">Redmi 8T</div>
+            <div class="redmi-container">
+                <div class="redmi-header">
+                    <div class="redmi-icon"><i class="fas fa-mobile-alt"></i></div>
+                    <div>
+                        <div style="font-size:1.5rem;font-weight:400;">Xiaomi Redmi Note 8T</div>
+                        <div style="opacity:0.5;font-size:0.9rem;">Snapdragon 665 · Adreno </div>
+                    </div>
+                </div>
+                <ul class="redmi-specs">
+                    <li><span>SoC</span><span>Snapdragon 665 · 8×2.0GHz</span></li>
+                    <li><span>RAM</span><span>4 GB LPDDR4X</span></li>
+                    <li><span>Storage</span><span>64 GB</span></li>
+                    <li><span>Display</span><span>6.3" · 1080×2340 · IPS</span></li>
+                    <li><span>Battery</span><span>4000mAh · 18W fast charge</span></li>
+                    <li><span>OS</span><span>LineageOS (Android 15)</span></li>
+                    <li><span>NFC</span><span>Так ✓</span></li>
+                </ul>
+            </div>`;
+
+        case 'tools': return `
+            <div class="app-title-bar" style="border-left-color:#88ccff">AI Tools</div>
+            <div class="ai-grid">
+                <div class="ai-card">
+                    <div class="ai-card-icon">🤖</div>
+                    <div class="ai-card-name">Claude Sonnet 4.6</div>
+                    <div class="ai-card-desc">Найкращий для коду і складних завдань. Сайт створений саме завдяки ньому.</div>
+                    <span class="ai-badge">Anthropic</span>
+                </div>
+                <div class="ai-card">
+                    <div class="ai-card-icon">💎</div>
+                    <div class="ai-card-name">Gemini 2.5 Pro</div>
+                    <div class="ai-card-desc">Google. Великий контекст, добре з документами і аналізом. Мій перший discord бот створений завдяки ньому.</div>
+                    <span class="ai-badge">Google</span>
+                </div>
+                <div class="ai-card">
+                    <div class="ai-card-icon">🚀</div>
+                    <div class="ai-card-name">Gemini 3</div>
+                    <div class="ai-card-desc">Наступний рівень від Google. Мультимодальний, швидший. Кращий за 2.5 .</div>
+                    <span class="ai-badge">Google</span>
+                </div>
+                <div class="ai-card">
+                    <div class="ai-card-icon">⚡</div>
+                    <div class="ai-card-name">Gemini 3.1 Preview</div>
+                    <div class="ai-card-desc">Preview гілка. Нові можливості раніше за всіх, але іноді нестабільно. Допоміг дописати функції для MakeIt</div>
+                    <span class="ai-badge">Google</span>
+                </div>
+                <div class="ai-card">
+                    <div class="ai-card-icon">✨</div>
+                    <div class="ai-card-name">GPT-5</div>
+                    <div class="ai-card-desc">OpenAI. Сильний у творчих завданнях і генерував ідеї для MakeIt.</div>
+                    <span class="ai-badge">OpenAI</span>
+                </div>
+            </div>
+            </div>`;
+
+        case 'music': return `
+            <div class="app-title-bar" style="border-left-color:var(--win-pink)">Music</div>
+            </div>
+            <div class="player-wrap">
+                <div class="player-box">
+                    <div class="player-track-name" id="pt-name">Twin Atlantic — Overthinking</div>
+                    <div class="player-artist" id="pt-artist">Twin Atlantic</div>
+                    <div class="player-progress" id="prog-bar"><div class="player-progress-fill" id="prog-fill"></div></div>
+                    <div class="player-controls">
+                        <button class="player-btn" onclick="prevTrack()"><i class="fas fa-backward"></i></button>
+                        <button class="player-btn play-btn" id="play-btn" onclick="togglePlay()"><i class="fas fa-play" id="play-icon"></i></button>
+                        <button class="player-btn" onclick="nextTrack()"><i class="fas fa-forward"></i></button>
+                    </div>
+                    <ul class="player-playlist" id="playlist-ul"></ul>
+                </div>
+            </div>`;
+
+        case 'discord': return `
+            <div class="app-title-bar" style="border-left-color:#5865F2">Discord</div>
+            <div class="dc-container">
+                <div class="dc-icon"><i class="fab fa-discord"></i></div>
+                <div class="dc-server-name">true.</div>
+                <div class="dc-desc">Заходь на сервер. Там ми шукаємо адекватних англомовних людей. Можеш разом із ними грати в що завгодно, головне без токсичності.</div>
+                <a href="https://discord.gg/DNbV8uCynp" target="_blank" class="dc-btn"><i class="fab fa-discord"></i> Приєднатись</a>
+            </div>`;
+
+        case 'profile': return `
+            <div class="app-title-bar" style="border-left-color:var(--win-blue)">Профіль</div>
+            <div class="profile-container">
+                <div class="profile-header">
+                    <div class="profile-avatar-big"><i class="fas fa-user"></i></div>
+                    <div>
+                        <div class="profile-name">Masik</div>
+                        <div class="profile-domain">mwkdev.pp.ua</div>
+                    </div>
+                </div>
+                <div class="profile-fields">
+                    <div class="profile-field"><span class="profile-field-label">Username</span><span class="profile-field-val">masik</span></div>
+                    <div class="profile-field"><span class="profile-field-label">Країна</span><span class="profile-field-val">Україна</span></div>
+                    <div class="profile-field"><span class="profile-field-label">Рід діяльності</span><span class="profile-field-val">Vibecoder · Modder · Content creator</span></div>
+                    <div class="profile-field"><span class="profile-field-label">Головний проєкт</span><span class="profile-field-val">MakeIt Havoc</span></div>
+                    <div class="profile-field"><span class="profile-field-label">Музика</span><span class="profile-field-val">Twin Atlantic, Beartooth.</span></div>
+                </div>
+                <div class="profile-links">
+                    <a href="https://github.com/masik52xd" target="_blank" class="profile-link"><i class="fab fa-github"></i> GitHub</a>
+                    <a href="https://www.youtube.com/@Mas1k52" target="_blank" class="profile-link"><i class="fab fa-youtube"></i> YouTube</a>
+                    <a href="https://discord.gg/DNbV8uCynp" target="_blank" class="profile-link"><i class="fab fa-discord"></i> Discord</a>
+                    <a href="https://masik52xd.github.io/makeithavoc/" target="_blank" class="profile-link"><i class="fas fa-gamepad"></i> MakeIt Havoc</a>
+                </div>
+            </div>`;
+
+        default: return `<div class="app-title-bar">App</div>`;
+        }
+    }
+
+    // ---- MUSIC PLAYER ----
+    const tracks = [
+        {title:'Overthinking', artist:'Twin Atlantic'},
+        {title:'No Sleep', artist:'Twin Atlantic'},
+        {title:'Mothertongue', artist:'Twin Atlantic'},
+        {title:'Aggressive', artist:'Beartooth'},
+        {title:'HMU', artist:'Tobias Dray'},
+        {title:'STEAM SFX', artist:'prodbyxs'},
+    ];
+    let currentTrack = 0;
+    let playing = false;
+    let progressInterval = null;
+    let fakeProgress = 0;
+
+    function initPlayer() {
+        renderPlaylist();
+    }
+    function renderPlaylist() {
+        const ul = document.getElementById('playlist-ul');
+        if(!ul) return;
+        ul.innerHTML = tracks.map((t,i)=>`
+            <li class="${i===currentTrack?'active':''}" onclick="selectTrack(${i})">
+                <span>${t.title}</span>
+                <span class="track-artist">${t.artist}</span>
+            </li>`).join('');
+    }
+    function selectTrack(i) {
+        currentTrack = i;
+        playing = false;
+        fakeProgress = 0;
+        clearInterval(progressInterval);
+        updatePlayerUI();
+        showWarningAndPlay();
+    }
+    function updatePlayerUI() {
+        const t = tracks[currentTrack];
+        const nm = document.getElementById('pt-name');
+        const ar = document.getElementById('pt-artist');
+        if(nm) nm.textContent = t.artist + ' — ' + t.title;
+        if(ar) ar.textContent = t.artist;
+        const icon = document.getElementById('play-icon');
+        if(icon) icon.className = playing ? 'fas fa-pause' : 'fas fa-play';
+        renderPlaylist();
+        const fill = document.getElementById('prog-fill');
+        if(fill) fill.style.width = fakeProgress + '%';
+    }
+    function showWarningAndPlay() {
+        showToast('⚠ Слухай офіційно в Spotify — поважай авторів!', 4000);
+        playing = true;
+        startFakeProgress();
+        updatePlayerUI();
+    }
+    function togglePlay() {
+        if(!playing) { showWarningAndPlay(); }
+        else { playing=false; clearInterval(progressInterval); updatePlayerUI(); }
+    }
+    function startFakeProgress() {
+        clearInterval(progressInterval);
+        progressInterval = setInterval(()=>{
+            if(!playing) return;
+            fakeProgress += 0.3;
+            if(fakeProgress >= 100) { nextTrack(); return; }
+            const fill = document.getElementById('prog-fill');
+            if(fill) fill.style.width = fakeProgress+'%';
+        }, 100);
+    }
+    function nextTrack() { currentTrack=(currentTrack+1)%tracks.length; fakeProgress=0; playing=true; startFakeProgress(); updatePlayerUI(); }
+    function prevTrack() { currentTrack=(currentTrack-1+tracks.length)%tracks.length; fakeProgress=0; playing=true; startFakeProgress(); updatePlayerUI(); }
+    </script>
+</body>
+</html>
